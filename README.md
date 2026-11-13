@@ -56,7 +56,7 @@ meshkitkeen setup
 
 ```sh
 meshkitkeen status                  # сводка по сети
-meshkitkeen reboot 192.168.2.51     # перезагрузить узел
+meshkitkeen reboot 192.168.1.100    # перезагрузить узел
 meshkitkeen wifi all off 5          # выключить 5 ГГц на всех устройствах
 meshkitkeen update self             # обновить прошивку контроллера
 meshkitkeen --help                  # все команды

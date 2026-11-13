@@ -36,7 +36,7 @@ meshkitkeen status
 
 ```sh
 meshkitkeen reboot self        # контроллер
-meshkitkeen reboot 192.168.2.51  # конкретный узел по IP
+meshkitkeen reboot 192.168.1.100  # конкретный узел по IP
 meshkitkeen reboot all         # все узлы + контроллер
 ```
 
@@ -48,7 +48,7 @@ meshkitkeen reboot all         # все узлы + контроллер
 
 ```sh
 meshkitkeen wifi self on 5     # включить 5 ГГц на контроллере
-meshkitkeen wifi 192.168.2.51 off 2.4
+meshkitkeen wifi 192.168.1.100 off 2.4
 meshkitkeen wifi all off 6     # выключить 6 ГГц (Wi-Fi 6E/7) на всех
 meshkitkeen wifi all on        # включить все диапазоны на всех
 ```
@@ -65,7 +65,7 @@ meshkitkeen wifi all on        # включить все диапазоны на
 
 ```sh
 meshkitkeen update self        # контроллер (интерактивно подтверждает)
-meshkitkeen update 192.168.2.51  # узел (требует meshkitkeen на узле)
+meshkitkeen update 192.168.1.100  # узел (требует meshkitkeen на узле)
 ```
 
 См. также `ota-update`.
@@ -88,7 +88,7 @@ meshkitkeen ota-update --auto   # без подтверждения (для уд
 Подготовка нового mesh-узла.
 
 ```sh
-meshkitkeen add-node 192.168.2.60
+meshkitkeen add-node 192.168.1.100
 ```
 
 Проверяет наличие Entware (`:222`) на узле и подсказывает дальнейшие шаги

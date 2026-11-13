@@ -89,7 +89,7 @@ meshkitkeen status
 4. Раздайте SSH-ключ (см. Шаг 3).
 
 ```sh
-meshkitkeen add-node 192.168.2.60
+meshkitkeen add-node 192.168.1.100
 ```
 
 ### Развёртывание Entware на узле
