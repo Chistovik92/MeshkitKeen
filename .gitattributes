@@ -1,0 +1,9 @@
+# Все текстовые файлы — с LF-переводами строк (обязательно для POSIX shell).
+# Без этого curl-скачанный с GitHub скрипт будет содержать CRLF и не запустится.
+* text=auto eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+*.conf text eol=lf
+LICENSE text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
