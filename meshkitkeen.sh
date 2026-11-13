@@ -7,7 +7,7 @@
 #  и ДОБАВЛЕН неинтерактивный режим + управление mesh-узлами (ретрансляторы/
 #  экстендеры) с головного роутера.
 #
-#  Без аргументов запускается полное интерактивное меню KeenKit.
+#  Без аргументов — встроенное меню MeshkitKeen (mesh-команды + полный KeenKit).
 #  С аргументами — неинтерактивные команды (status/reboot/wifi/update/...).
 #
 #  Лицензия: MIT (см. LICENSE).  Никакие пароли/ключи не хранятся в репозитории.
@@ -2332,8 +2332,9 @@ MeshkitKeen v$FORK_VERSION — форк KeenKit $SCRIPT_VERSION с управл�
   meshkitkeen backup-entware            Бэкап Entware
   meshkitkeen backup-block              Бэкап разделов mtd
 
-Без аргументов запускается полное интерактивное меню KeenKit
-(обновление прошивки, загрузчик, бэкапы, компоненты и т.д.).
+Без аргументов запускается встроенное меню MeshkitKeen (mesh-команды +
+пункт «Меню KeenKit» с полным оригинальным функционалом: прошивка из файла,
+бэкапы, слоты, загрузчик, компоненты, язык, обновление скрипта).
 
 Конфиг:  /opt/etc/MeshkitKeen.conf   (domain, ssh_user, ssh_port)
 Ключ:    /opt/etc/MeshkitKeen/id_ed25519   (для SSH на узлы)
@@ -2342,18 +2343,28 @@ MeshkitKeen v$FORK_VERSION — форк KeenKit $SCRIPT_VERSION с управл�
 EOF
 }
 
-# --- Интерактивное меню MeshkitKeen (дополнение к меню KeenKit) -------------
+# --- Главное меню MeshkitKeen (mesh-команды + вход в полное меню KeenKit) ----
 mesh_menu() {
   while true; do
-    printf "${CYAN}MeshkitKeen v%s — управление mesh-сетью${NC}\n\n" "$FORK_VERSION"
-    echo "1. Статус сети (все устройства)"
-    echo "2. Перезагрузить устройство"
-    echo "3. Wi-Fi вкл/выкл"
-    echo "4. Обновить прошивку (OTA)"
-    echo "5. Подключить новый mesh-узел"
-    echo "6. Настроить SSH-ключи (setup)"
-    echo "7. Источник обновлений (domain)"
-    echo "0. Выход"
+    local ver
+    ver=$(rci_request "show/version")
+    printf "\033c"
+    printf "${CYAN}  MeshkitKeen v%s — управление mesh-сетью Keenetic${NC}\n" "$FORK_VERSION"
+    printf "${CYAN}  Модель:${NC} %s (%s) | %s\n" "$(get_device "$ver")" "$(get_hw_id "$ver")" "$(get_fw_version "$ver")"
+    echo ""
+    echo "  --- Управление mesh-сетью ---"
+    echo "  1. Статус сети (все устройства)"
+    echo "  2. Перезагрузить устройство"
+    echo "  3. Wi-Fi вкл/выкл"
+    echo "  4. Обновить прошивку (OTA)"
+    echo "  5. Подключить новый mesh-узел"
+    echo "  6. Настроить SSH-ключи"
+    echo "  7. Источник обновлений"
+    echo ""
+    echo "  --- Полный KeenKit ---"
+    echo "  8. Меню KeenKit (прошивка из файла, бэкапы, слоты, загрузчик, компоненты)"
+    echo ""
+    echo "  0. Выход"
     echo ""
     printf "Выберите действие: "
     local choice t a b
@@ -2367,6 +2378,7 @@ mesh_menu() {
       5) printf "IP нового узла: "; read -r t; cmd_add_node "$t" ;;
       6) cmd_setup ;;
       7) printf "URL источника (пусто — показать): "; read -r t; [ -n "$t" ] && cmd_domain set "$t" || cmd_domain ;;
+      8) main_menu ;;
       0) exit 0 ;;
       *) echo "Неверный выбор." ;;
     esac
@@ -2403,5 +2415,5 @@ if [ "$1" = "script_update" ]; then
 elif [ $# -gt 0 ]; then
   main "$@"
 else
-  main_menu
+  mesh_menu
 fi
