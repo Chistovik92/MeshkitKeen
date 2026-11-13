@@ -70,13 +70,14 @@ main() {
       --output "$CONFIG_FILE" 2>/dev/null || \
     cat > "$CONFIG_FILE" <<'EOF'
 # MeshkitKeen configuration
-# OTA-домен (ваш сервер прошивок, каталог /osvault)
-domain="https://your-ota-domain.example.com"
+# OTA-домен по умолчанию — Osvault (https://osvault.project-athens.com).
+# Свой источник задаётся командой: meshkitkeen domain set <URL>
+#domain="https://your-ota-domain.example.com"
 # Доступ к mesh-узлам по SSH
 ssh_user="root"
 ssh_port="222"
 EOF
-    echo "  Отредактируйте domain в $CONFIG_FILE"
+    echo "  Источник обновлений: meshkitkeen domain  (по умолчанию Osvault)"
   fi
 
   print_message "Готово. Запуск: meshkitkeen" "$GREEN"

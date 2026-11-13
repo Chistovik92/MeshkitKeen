@@ -42,13 +42,25 @@ curl -fLsS https://raw.githubusercontent.com/Chistovik92/MeshkitKeen/main/instal
 Отредактируйте `/opt/etc/MeshkitKeen.conf`:
 
 ```
-domain="https://your-ota-domain.example.com"   # ваш OTA-сервер, каталог /osvault
 ssh_user="root"
 ssh_port="222"
+#domain="https://your-ota-domain.example.com"   # необязательно, см. ниже
 ```
 
-`domain` нужен только для команды `update`. Каталог `/osvault` должен содержать
-подпапки по моделям устройств с файлами `.bin` и `md5sum`:
+`domain` нужен только для команды `update`/`ota-update`. Если он не задан,
+используется **Osvault по умолчанию** (`https://osvault.project-athens.com`) — тот же
+источник, что и в KeenKit.
+
+Свой источник прошивок удобнее задать командами (без правки файла вручную):
+
+```sh
+meshkitkeen domain set https://your-ota-domain.example.com
+meshkitkeen domain        # показать текущий источник
+meshkitkeen domain reset  # вернуться к Osvault по умолчанию
+```
+
+Каталог `/osvault` на сервере должен содержать подпапки по моделям устройств
+с файлами `.bin` и `md5sum`:
 
 ```
 https://<domain>/osvault/<ModelName>/

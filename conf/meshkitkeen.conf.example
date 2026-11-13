@@ -5,10 +5,22 @@
 #  НЕ храните в этом файле пароли — доступ к узлам выполняется по SSH-ключу
 #  (см. команду `meshkitkeen setup`).
 
-# OTA-домен — ваш сервер прошивок.  Ожидается каталог /osvault с подпапками
-# по моделям устройств и файлами .bin (+ md5sum).
-domain="https://your-ota-domain.example.com"
+# --- OTA-домен (источник прошивок) -----------------------------------------
+# По умолчанию используется Osvault (https://osvault.project-athens.com) —
+# тот же источник, что и в KeenKit. Если `domain` не задан (закомментирован),
+# применяется именно он.
+#
+# Чтобы указать СВОЙ сервер прошивок, раскомментируйте строку ниже либо
+# выполните на устройстве:
+#     meshkitkeen domain set https://your-ota-domain.example.com
+#     meshkitkeen domain reset       # вернуться к Osvault по умолчанию
+#
+# Ожидается каталог /osvault с подпапками по моделям и файлами .bin (+ md5sum):
+#     https://<domain>/osvault/<ModelName>/<version>.bin
+#     https://<domain>/osvault/<ModelName>/md5sum
+#
+#domain="https://your-ota-domain.example.com"
 
-# Доступ к mesh-узлам через SSH (dropbear :222, Entware).
+# --- Доступ к mesh-узлам через SSH (dropbear :222, Entware) ----------------
 ssh_user="root"
 ssh_port="222"

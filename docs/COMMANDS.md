@@ -8,7 +8,9 @@
 meshkitkeen <команда> [аргументы]
 ```
 
-Без аргументов запускается интерактивное меню.
+Без аргументов запускается **полное интерактивное меню KeenKit** (обновление прошивки,
+загрузчик, переключение слотов, резервные копии, компоненты и т.д. — весь оригинальный
+функционал KeenKit 2.9.5 сохранён).
 
 ## `status`
 
@@ -66,9 +68,10 @@ meshkitkeen wifi all on        # включить все диапазоны на
 ```sh
 meshkitkeen update self        # контроллер (интерактивно подтверждает)
 meshkitkeen update 192.168.1.100  # узел (требует meshkitkeen на узле)
+meshkitkeen update self --domain https://my.example.com  # другой источник
 ```
 
-См. также `ota-update`.
+См. также `ota-update` и `domain`.
 
 ## `ota-update`
 
@@ -77,11 +80,27 @@ meshkitkeen update 192.168.1.100  # узел (требует meshkitkeen на у
 ```sh
 meshkitkeen ota-update          # покажет версию и спросит подтверждение
 meshkitkeen ota-update --auto   # без подтверждения (для удалённого вызова)
+meshkitkeen ota-update --auto --domain https://my.example.com
 ```
 
 Логика: открывает `<domain>/osvault`, находит каталог модели, берёт последний `.bin`,
-проверяет MD5 по `md5sum`, обновляет прошивку через нативный ndm
-(`copy temp:/<file> flash:/firmware`).
+проверяет MD5 по `md5sum`, обновляет прошивку штатным механизмом KeenKit
+(нативный ndm `copy … flash:/firmware` либо dual-slot `dd` + смена слота).
+
+## `domain`
+
+Просмотр и настройка источника обновлений (OTA-домена).
+
+```sh
+meshkitkeen domain                     # показать текущий источник
+meshkitkeen domain set https://my.example.com  # задать свой источник
+meshkitkeen domain reset               # вернуться к Osvault по умолчанию
+```
+
+- По умолчанию используется **Osvault** (`https://osvault.project-athens.com`) —
+  тот же источник, что и в KeenKit.
+- Значение сохраняется в `/opt/etc/MeshkitKeen.conf` (ключ `domain=`), остальные
+  ключи конфига (`ssh_user`, `ssh_port`) при этом не затрагиваются.
 
 ## `add-node`
 
