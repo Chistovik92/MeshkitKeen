@@ -1933,7 +1933,7 @@ cmd_status() {
   load_config
   ensure_jq
 
-  local self_version self_system device fw hwid cpuload ram uptime disk label
+  local self_version self_system device fw hwid cpuload ram uptime disk
   self_version=$(rci_request "show/version")
   self_system=$(rci_request "show/system")
   device=$(get_device "$self_version")
@@ -1942,7 +1942,6 @@ cmd_status() {
   cpuload=$(get_cpuload "$self_system")
   ram=$(get_ram_usage "$self_system")
   uptime=$(get_uptime "$self_system")
-  label=$(json_get_value "$(rci_request "show/sc/opkg/disk")" '.disk | rtrimstr("/") | rtrimstr(":")')
   disk=$(get_opkg_storage)
 
   printf "${CYAN}MeshkitKeen v%s (KeenKit %s) — mesh-сеть Keenetic${NC}\n\n" "$FORK_VERSION" "$SCRIPT_VERSION"
@@ -1952,7 +1951,7 @@ cmd_status() {
   printf "  Прошивка:      %s\n" "$fw"
   printf "  CPU:           %s%% | %s\n" "$cpuload" "$(get_cpu_model)"
   printf "  ОЗУ:           %s\n" "$ram"
-  printf "  Накопитель:    %s %s\n" "$label" "$disk"
+  printf "  Накопитель:    %s\n" "$disk"
   printf "  Uptime:        %s\n\n" "$uptime"
 
   local members member_count ip model mfw mfw_avail mcpu mram muptime mspeed mode mac
@@ -1966,24 +1965,30 @@ cmd_status() {
   printf "${GREEN}Mesh-узлы (%s)${NC}\n" "$member_count"
 
   echo "$members" | jq -r '.[] | select(.ip != null) |
-    [.ip, (.model // "?"), (.fw // "?"), (."fw-available" // ""), (.system.cpuload // "?"),
-     (.system.memory // "?"), (.system.uptime // "0"),
-     (.backhaul.speed // "0"), (.mode // "?"), (.mac // "?")]
+    [ .ip,
+      (.model // "-"),
+      (.fw // "-"),
+      (if (."fw-available" // "") == "" then "-" else ."fw-available" end),
+      (if .system.cpuload == null then "-" else .system.cpuload end),
+      (.system.memory // "-"),
+      (.system.uptime // "0"),
+      (.backhaul.speed // "0"),
+      (.mode // "-"),
+      (.mac // "-") ]
     | @tsv' 2>/dev/null | while IFS=$(printf '\t') read -r ip model mfw mfw_avail mcpu mram muptime mspeed mode mac; do
     [ -n "$ip" ] || continue
+    local ram upd
     ram=$(printf '%s' "$mram" | awk -F/ '{ if ($2) printf "%d / %d MB", $1/1024, $2/1024; else print "?" }')
-    local upd
-    if [ -n "$mfw_avail" ]; then
-      if [ "$mfw_avail" = "$mfw" ]; then
-        upd="нет (актуальна)"
-      else
-        upd="${YELLOW}ДОСТУПНО: $mfw_avail${NC}"
-      fi
-    else
+    if [ "$mfw_avail" = "-" ]; then
       upd="—"
+    elif [ "$mfw_avail" = "$mfw" ]; then
+      upd="нет (актуальна)"
+    else
+      upd="${YELLOW}ДОСТУПНО: $mfw_avail${NC}"
     fi
-    printf "\n  ${CYAN}%s${NC}  (%s, %s)\n" "$model" "$mode" "$ip"
+    printf "\n  ${CYAN}%s${NC}  [%s]\n" "$model" "$ip"
     printf "    MAC:          %s\n" "$mac"
+    printf "    Режим:        %s\n" "$mode"
     printf "    Прошивка:     %s\n" "$mfw"
     printf "    Обновление:   %s\n" "$upd"
     printf "    Backhaul:     %s Мбит/с\n" "$mspeed"
