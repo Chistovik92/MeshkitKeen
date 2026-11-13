@@ -1857,7 +1857,9 @@ get_cpuload() {
 
 detect_ssh() {
   local b
-  for b in /opt/bin/dbclient /opt/bin/ssh /usr/bin/ssh; do
+  # Предпочитаем OpenSSH-клиент: dropbear dbclient не умеет pubkey-аутентификацию
+  # (выдаёт «No auth methods could be used» и падает в пароль).
+  for b in /opt/bin/ssh /usr/bin/ssh /opt/bin/dbclient; do
     [ -x "$b" ] && { SSH_BIN="$b"; break; }
   done
   [ -n "$SSH_BIN" ] || SSH_BIN="ssh"
@@ -1871,10 +1873,11 @@ ssh_node() {
   local ip="$1" cmd="$2"
   [ -n "$SSH_BIN" ] || detect_ssh
   if $SSH_BIN -h 2>&1 | grep -qi dropbear; then
-    $SSH_BIN -y -y -q -i "$SSH_KEY" -l "$SSH_USER" -p "$SSH_PORT" "$ip" "$cmd" 2>&1
+    $SSH_BIN -y -y -q -i "$SSH_KEY" -l "$SSH_USER" -p "$SSH_PORT" "$ip" "$cmd" < /dev/null 2>&1
   else
     $SSH_BIN -q -i "$SSH_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-      -o LogLevel=ERROR -l "$SSH_USER" -p "$SSH_PORT" "$ip" "$cmd" 2>&1
+      -o BatchMode=yes -o ConnectTimeout=10 -o LogLevel=ERROR \
+      -l "$SSH_USER" -p "$SSH_PORT" "$ip" "$cmd" < /dev/null 2>&1
   fi
 }
 
@@ -2276,14 +2279,30 @@ cmd_setup() {
 
   if [ ! -f "$SSH_KEY" ]; then
     print_message "Генерация SSH-ключа..." "$YELLOW"
-    dropbearkey -t ed25519 -f "$SSH_KEY" >/dev/null 2>&1 || {
-      echo "Не удалось сгенерировать ключ (нужен dropbearkey)." >&2
+    if command -v ssh-keygen >/dev/null 2>&1; then
+      ssh-keygen -t ed25519 -N "" -C "root@Keenetic" -f "$SSH_KEY" >/dev/null 2>&1 || {
+        echo "Не удалось сгенерировать ключ (ssh-keygen)." >&2
+        return 1
+      }
+    elif command -v dropbearkey >/dev/null 2>&1; then
+      dropbearkey -t ed25519 -f "$SSH_KEY" >/dev/null 2>&1 || {
+        echo "Не удалось сгенерировать ключ (dropbearkey)." >&2
+        return 1
+      }
+    else
+      echo "Нет ssh-keygen/dropbearkey. Установите: opkg install openssh-keygen" >&2
       return 1
-    }
+    fi
   fi
 
   local pubkey
-  pubkey=$(dropbearkey -y -f "$SSH_KEY" 2>/dev/null | grep -E '^ssh-' | head -n 1)
+  # Публичный ключ: из .pub (ssh-keygen) либо dropbearkey -y (dropbear).
+  if [ -f "$SSH_KEY.pub" ]; then
+    pubkey=$(grep -E '^ssh-' "$SSH_KEY.pub" 2>/dev/null | head -n 1)
+  fi
+  if [ -z "$pubkey" ] && command -v dropbearkey >/dev/null 2>&1; then
+    pubkey=$(dropbearkey -y -f "$SSH_KEY" 2>/dev/null | grep -E '^ssh-' | head -n 1)
+  fi
   if [ -z "$pubkey" ]; then
     echo "Не удалось получить публичный ключ." >&2
     return 1
@@ -2294,8 +2313,13 @@ cmd_setup() {
   echo "  $pubkey"
   echo ""
   echo "Раздайте ключ на каждый mesh-узел (по SSH :222, root):"
-  echo "  mkdir -p /opt/root/.ssh"
-  echo "  echo '$pubkey' >> /opt/root/.ssh/authorized_keys"
+  echo "  mkdir -p /opt/root/.ssh && chmod 700 /opt/root/.ssh"
+  echo "  echo '$pubkey' > /opt/root/.ssh/authorized_keys && chmod 600 /opt/root/.ssh/authorized_keys"
+  echo ""
+  echo "ВАЖНО: dropbear на узлах по умолчанию ищет authorized_keys по HOME=/ (read-only)."
+  echo "Добавьте опцию -D /opt/root/.ssh в /opt/etc/init.d/S51dropbear:"
+  echo "  \"\$DROPBEAR\" -p \"\$PORT\" -P \"\$PIDFILE\" -D /opt/root/.ssh"
+  echo "  и перезапустите: /opt/etc/init.d/S51dropbear restart"
   echo ""
   echo "Затем проверьте доступ: meshkitkeen status"
 }

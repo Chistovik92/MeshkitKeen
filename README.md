@@ -55,13 +55,17 @@
 curl -fLsS https://raw.githubusercontent.com/Chistovik92/MeshkitKeen/main/install.sh | sh
 ```
 
+Установщик поставит зависимости (включая **OpenSSH-клиент** — нужен для доступа к
+узлам по ключу, т.к. клиент dropbear не умеет pubkey-аутентификацию).
+
 Затем настройте ключи доступа к узлам:
 
 ```sh
 meshkitkeen setup
 ```
 
-Подробности — в [docs/SETUP.md](docs/SETUP.md).
+> ⚠️ На каждом mesh-узле dropbear должен быть запущен с опцией `-D /opt/root/.ssh`,
+> иначе ключ не будет принят. Полный порядок — в [docs/SETUP.md](docs/SETUP.md).
 
 ## Использование
 

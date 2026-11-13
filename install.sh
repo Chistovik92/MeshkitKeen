@@ -48,8 +48,9 @@ packages_checker() {
 main() {
   print_message "MeshkitKeen — установка" "$GREEN"
 
-  # Зависимости (curl/jq обязательны; dropbearkey входит в dropbear)
-  packages_checker curl jq findutils tar libcurl || return 1
+  # Зависимости (curl/jq обязательны; openssh-client — для SSH-доступа к узлам по
+  # ключу, т.к. клиент dropbear не умеет pubkey-аутентификацию)
+  packages_checker curl jq findutils tar libcurl openssh-client openssh-keygen || return 1
 
   # Скачиваем скрипт
   print_message "Скачивание $SCRIPT ..."

@@ -18,10 +18,12 @@ SSH-ключу, публичная часть которого раздаётс�
 
 ## Предусловия
 
-1. На **контроллере** установлен Entware с root-shell по SSH `:222`
-   (пакеты: `dropbear`, `dropbearkey`, `curl`, `jq`).
-2. На каждом mesh-узле, которым нужно управлять удалённо, тоже установлен Entware
-   с dropbear `:222`.
+1. На **контроллере** установлен Entware с root-shell по SSH `:222` и пакетами:
+   `curl`, `jq`, а также **`openssh-client` + `openssh-keygen`** (см. ниже — клиент
+   dropbear не умеет pubkey-аутентификацию).
+2. На каждом mesh-узле, которым нужно управлять удалённо, установлен Entware
+   с dropbear `:222`, причём dropbear запущен с опцией `-D /opt/root/.ssh`
+   (см. «Фикс dropbear на узле»).
 
 Если Entware на узлах ещё нет — разверните его (см. «Развёртывание Entware на узле»).
 
@@ -36,6 +38,16 @@ curl -fLsS https://raw.githubusercontent.com/Chistovik92/MeshkitKeen/main/instal
 - скачивает `meshkitkeen.sh` в `/opt/meshkitkeen.sh`;
 - создаёт симлинк `/opt/bin/meshkitkeen`;
 - создаёт `/opt/etc/MeshkitKeen.conf` из примера.
+
+Установите OpenSSH-клиент (нужен для SSH-доступа к узлам по ключу):
+
+```sh
+opkg install openssh-client openssh-keygen
+```
+
+> Почему: Entware-клиент `dbclient` (dropbear) **не поддерживает
+> pubkey-аутентификацию** — с ключом он выдаёт `No auth methods could be used`
+> и падает в пароль. OpenSSH-клиент работает по ключу корректно.
 
 ## Шаг 2. Конфигурация
 
@@ -78,12 +90,30 @@ meshkitkeen setup
 публичный ключ. Раздайте его на **каждый** mesh-узел (по SSH `:222`, root) — один раз:
 
 ```sh
-mkdir -p /opt/root/.ssh
-echo 'ssh-ed25519 AAAA... ваш-ключ' >> /opt/root/.ssh/authorized_keys
+mkdir -p /opt/root/.ssh && chmod 700 /opt/root/.ssh
+echo 'ssh-ed25519 AAAA... ваш-ключ' > /opt/root/.ssh/authorized_keys && chmod 600 /opt/root/.ssh/authorized_keys
 ```
 
-> Примечание: у root в Entware домашний каталог — `/opt/root`, поэтому dropbear
-> ищет `authorized_keys` именно в `/opt/root/.ssh/`.
+> Примечание: у root в Entware домашний каталог — `/opt/root`, поэтому ключ кладём
+> именно в `/opt/root/.ssh/`.
+
+### Фикс dropbear на узле (обязательно)
+
+По умолчанию dropbear-сервер на узле ищет `authorized_keys` по `HOME=/`, а `/` —
+read-only. Поэтому **на каждом узле** добавьте опцию `-D /opt/root/.ssh` в init-скрипт
+`/opt/etc/init.d/S51dropbear` (строка запуска):
+
+```
+if ! "$DROPBEAR" -p "$PORT" -P "$PIDFILE" -D /opt/root/.ssh; then
+```
+
+и перезапустите:
+
+```sh
+/opt/etc/init.d/S51dropbear restart
+```
+
+Без этой опции ключ не будет принят, и SSH упадёт в пароль.
 
 После раздачи проверьте доступ:
 
@@ -91,7 +121,8 @@ echo 'ssh-ed25519 AAAA... ваш-ключ' >> /opt/root/.ssh/authorized_keys
 meshkitkeen status
 ```
 
-Строка `Накопитель:` у узлов появится только когда ключ раздан.
+Строка `Накопитель:` у узлов появится только когда ключ раздан и dropbear
+настроен с `-D`.
 
 ## Шаг 4. Подключение нового mesh-узла
 
