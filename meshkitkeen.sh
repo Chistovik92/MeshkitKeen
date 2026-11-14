@@ -29,6 +29,10 @@ OPT_DIR="/opt"
 CONFIG_FILE="$OPT_DIR/etc/$REPO.conf"
 STORAGE_DIR="/storage"
 SCRIPT_VERSION="2.9.5"
+# Версия форка (см. docs/VERSIONING.md):
+#   MAJOR (1-я) — очень большое обновление (по решению автора);
+#   MINOR (2-я) — вышла новая версия KeenKit (синхронизация с апстримом);
+#   PATCH (3-я) — правки в собственном коде.
 FORK_VERSION="1.0.0"
 MIN_RAM_SIZE="256"
 MIN_RAM_SIZE_AARCH64="512"

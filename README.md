@@ -111,6 +111,7 @@ install.sh                        — установщик
 conf/meshkitkeen.conf.example     — пример конфигурации
 docs/SETUP.md                     — установка и настройка
 docs/COMMANDS.md                  — справочник команд
+docs/VERSIONING.md                — правила нумерации версий форка
 keenkit_295_orig.sh               — оригинал KeenKit 2.9.5 (база форка, справочно)
 LICENSE                           — MIT
 ```
