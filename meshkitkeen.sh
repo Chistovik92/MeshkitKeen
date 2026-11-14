@@ -33,7 +33,7 @@ SCRIPT_VERSION="2.9.5"
 #   MAJOR (1-я) — очень большое обновление (по решению автора);
 #   MINOR (2-я) — вышла новая версия KeenKit (синхронизация с апстримом);
 #   PATCH (3-я) — правки в собственном коде.
-FORK_VERSION="1.0.1"
+FORK_VERSION="1.0.2"
 MIN_RAM_SIZE="256"
 MIN_RAM_SIZE_AARCH64="512"
 PACKAGES_LIST="python3-base python3 python3-light libpython3"
@@ -1089,7 +1089,7 @@ resolve_ota_domain() {
 ota_request() {
   local url="$1"
   shift
-  if ! curl -fLsS --basic --max-time 7 "$url" "$@"; then
+  if ! curl -fLsS --basic --connect-timeout 10 --max-time 1800 --retry 3 --retry-delay 2 "$url" "$@"; then
     url=$(printf '%s' "$url" | sed 's/%/%%/g')
     print_message "Не удалось загрузить: $url" "$RED" >&2
     return 1
