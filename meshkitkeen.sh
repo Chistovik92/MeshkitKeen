@@ -33,7 +33,7 @@ SCRIPT_VERSION="2.9.5"
 #   MAJOR (1-я) — очень большое обновление (по решению автора);
 #   MINOR (2-я) — вышла новая версия KeenKit (синхронизация с апстримом);
 #   PATCH (3-я) — правки в собственном коде.
-FORK_VERSION="1.0.2"
+FORK_VERSION="1.0.3"
 MIN_RAM_SIZE="256"
 MIN_RAM_SIZE_AARCH64="512"
 PACKAGES_LIST="python3-base python3 python3-light libpython3"
@@ -55,11 +55,11 @@ print_menu() {
   printf "\033c"
   printf "${CYAN}"
   cat <<'EOF'
-    __ __                __ __ _ __
-   / //_/__  ___  ____  / //_/(_) /_
-  / ,< / _ \/ _ \/ __ \/ ,<  / / __/
- / /| /  __/  __/ / / / /| |/ / /_
-/_/ |_\___/\___/_/ /_/_/ |_/_/\__/
+    __  ___          __    __ __ _ __  __ __
+   /  |/  /__  _____/ /_  / //_/(_) /_/ //_/__  ___  ____
+  / /|_/ / _ \/ ___/ __ \/ ,<  / / __/ ,< / _ \/ _ \/ __ \
+ / /  / /  __(__  ) / / / /| |/ / /_/ /| /  __/  __/ / / /
+/_/  /_/\___/____/_/ /_/_/ |_/_/\__/_/ |_\___/\___/_/ /_/
 
 EOF
   version_info=$(rci_request "show/version")
@@ -81,7 +81,7 @@ EOF
     printf "${CYAN}Ретрансляторы:  ${NC}"
     printf "%b\n" "$get_repeaters_info"
   fi
-  printf "${CYAN}Версия:         ${NC}%s\n\n" "$SCRIPT_VERSION by ${USERNAME}$(check_update)"
+  printf "${CYAN}Версия:         ${NC}%s (KeenKit %s by %s)%s\n\n" "$FORK_VERSION" "$SCRIPT_VERSION" "$USERNAME" "$(check_update)"
   echo "1. Обновить прошивку из файла"
   echo "2. Бэкап разделов"
   echo "3. Бэкап Entware"
@@ -2477,7 +2477,16 @@ mesh_menu() {
     local ver
     ver=$(rci_request "show/version")
     printf "\033c"
-    printf "${CYAN}  MeshkitKeen v%s — управление mesh-сетью Keenetic${NC}\n" "$FORK_VERSION"
+    printf "${CYAN}"
+    cat <<'EOF'
+    __  ___          __    __ __ _ __  __ __
+   /  |/  /__  _____/ /_  / //_/(_) /_/ //_/__  ___  ____
+  / /|_/ / _ \/ ___/ __ \/ ,<  / / __/ ,< / _ \/ _ \/ __ \
+ / /  / /  __(__  ) / / / /| |/ / /_/ /| /  __/  __/ / / /
+/_/  /_/\___/____/_/ /_/_/ |_/_/\__/_/ |_\___/\___/_/ /_/
+
+EOF
+    printf "${CYAN}  MeshkitKeen v%s (KeenKit %s) — управление mesh-сетью Keenetic${NC}\n" "$FORK_VERSION" "$SCRIPT_VERSION"
     printf "${CYAN}  Модель:${NC} %s (%s) | %s\n" "$(get_device "$ver")" "$(get_hw_id "$ver")" "$(get_fw_version "$ver")"
     echo ""
     echo "  --- Управление mesh-сетью ---"
