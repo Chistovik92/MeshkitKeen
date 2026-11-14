@@ -33,7 +33,7 @@ SCRIPT_VERSION="2.9.5"
 #   MAJOR (1-я) — очень большое обновление (по решению автора);
 #   MINOR (2-я) — вышла новая версия KeenKit (синхронизация с апстримом);
 #   PATCH (3-я) — правки в собственном коде.
-FORK_VERSION="1.0.0"
+FORK_VERSION="1.0.1"
 MIN_RAM_SIZE="256"
 MIN_RAM_SIZE_AARCH64="512"
 PACKAGES_LIST="python3-base python3 python3-light libpython3"
@@ -1902,6 +1902,51 @@ get_member_ips() {
   get_members | jq -r '.[] | select(.ip != null) | .ip' 2>/dev/null
 }
 
+# --- Выбор mesh-узла по номеру (меню) -----------------------------------------
+# Выводит нумерованный список подключённых mesh-узлов и сохраняет выбор
+# в PICKED_NODE: "self" | "all" | IP-адрес.
+pick_node() {
+  ensure_jq
+  local members member_ips choice idx model ip
+  PICKED_NODE="self"
+  members=$(get_members)
+  member_ips=$(get_member_ips)
+
+  while true; do
+    echo ""
+    echo "Подключённые mesh-узлы:"
+    idx=0
+    echo "$members" | jq -r '.[] | select(.ip != null) | [(.model // "-"), .ip] | @tsv' 2>/dev/null \
+    | while IFS=$(printf '\t') read -r model ip; do
+        [ -n "$ip" ] || continue
+        idx=$((idx + 1))
+        printf "  %d. %s — %s\n" "$idx" "$model" "$ip"
+      done
+    if [ -z "$member_ips" ]; then
+      echo "  (mesh-узлы не найдены)"
+    fi
+    echo "  0. Контроллер (self)"
+    [ -n "$member_ips" ] && echo "  a. Все узлы (all)"
+    printf "Выберите (номер / 0 / a / IP): "
+    read -r choice || { PICKED_NODE="self"; return 0; }
+    choice=$(echo "$choice" | tr -d ' \n\r')
+    [ -z "$choice" ] && choice=0
+
+    case "$choice" in
+      0) PICKED_NODE="self"; return 0 ;;
+      a|A|all) PICKED_NODE="all"; return 0 ;;
+      *)
+        if echo "$choice" | grep -qE '^[0-9]+$'; then
+          ip=$(printf '%s\n' "$member_ips" | sed -n "${choice}p")
+          if [ -n "$ip" ]; then PICKED_NODE="$ip"; return 0; fi
+          echo "Неверный номер: $choice" >&2
+          continue
+        fi
+        PICKED_NODE="$choice"; return 0 ;;   # прямой IP
+    esac
+  done
+}
+
 # --- Wi-Fi: универсальная поддержка 2.4 / 5 / 6 ГГц (Wi-Fi 6/6E/7) ----------
 wifi_band_to_ap() {
   case "$1" in
@@ -2457,7 +2502,7 @@ mesh_menu() {
       1) cmd_status ;;
       2) printf "IP (self/all/или IP узла): "; read -r t; cmd_reboot "${t:-self}" ;;
       3) printf "IP (self/all/или IP узла): "; read -r t; printf "on/off: "; read -r a; printf "диапазон (2.4/5/6/all): "; read -r b; cmd_wifi "${t:-self}" "$a" "${b:-all}" ;;
-      4) printf "IP (self/или IP узла): "; read -r t; cmd_update "${t:-self}" ;;
+      4) pick_node; cmd_update "${PICKED_NODE:-self}" ;;
       5) printf "IP нового узла: "; read -r t; cmd_add_node "$t" ;;
       6) cmd_setup ;;
       7) printf "URL источника (пусто — показать): "; read -r t; [ -n "$t" ] && cmd_domain set "$t" || cmd_domain ;;
