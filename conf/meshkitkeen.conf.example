@@ -24,3 +24,19 @@
 # --- Доступ к mesh-узлам через SSH (dropbear :222, Entware) ----------------
 ssh_user="root"
 ssh_port="222"
+
+# --- SSH-ключ и запоминание host-ключей узлов -------------------------------
+# По умолчанию панель хранит ключ и known_hosts в /opt/etc/MeshkitKeen/:
+#   ssh_key=""
+#   known_hosts=""
+#
+# Панель ЗАПОМИНАЕТ подключения к узлам:
+#   * ключ доступа       — id_ed25519 (создаётся командой `meshkitkeen setup`);
+#   * host-ключи узлов   — known_hosts (StrictHostKeyChecking=accept-new):
+#     при первом входе ключ узла добавляется без подтверждения, при его
+#     СМЕНЕ соединение отклоняется (защита от MITM). Очистить запись:
+#         meshkitkeen known-hosts rm <IP|all>
+#
+# Чтобы переопределить расположение, раскомментируйте и укажите свои пути:
+#ssh_key="/opt/etc/MeshkitKeen/id_ed25519"
+#known_hosts="/opt/etc/MeshkitKeen/known_hosts"

@@ -116,7 +116,7 @@ meshkitkeen domain reset               # вернуться к Osvault по ум
 - По умолчанию используется **Osvault** (`https://osvault.project-athens.com`) —
   тот же источник, что и в KeenKit.
 - Значение сохраняется в `/opt/etc/MeshkitKeen.conf` (ключ `domain=`), остальные
-  ключи конфига (`ssh_user`, `ssh_port`) при этом не затрагиваются.
+  ключи конфига (`ssh_user`, `ssh_port`, `ssh_key`, `known_hosts`) при этом не затрагиваются.
 
 ## `add-node`
 
@@ -139,6 +139,28 @@ meshkitkeen setup
 
 Генерирует `id_ed25519` в `/opt/etc/MeshkitKeen/` и печатает публичный ключ для
 добавления в `/opt/root/.ssh/authorized_keys` на узлах.
+
+## `known-hosts`
+
+Просмотр и очистка запомненных host-ключей mesh-узлов.
+
+```sh
+meshkitkeen known-hosts                # показать запомненные узлы (known_hosts)
+meshkitkeen known-hosts rm 192.168.1.100  # удалить запись конкретного узла
+meshkitkeen known-hosts rm all         # очистить весь known_hosts
+```
+
+Панель **запоминает** host-ключи узлов в `/opt/etc/MeshkitKeen/known_hosts`
+(режим `StrictHostKeyChecking=accept-new`):
+
+- при **первом** подключении ключ узла добавляется автоматически, без
+  подтверждения;
+- при **смене** ключа узла (переустановка/смена прошивки) соединение
+  **отклоняется** (защита от MITM) — удалите старую запись командой
+  `known-hosts rm <IP>`, затем подключитесь снова.
+
+Это позволяет управлять узлами без интерактивных запросов и без отключения
+проверки host-ключей.
 
 ## `backup-entware`
 

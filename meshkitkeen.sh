@@ -40,6 +40,7 @@ SSH_USER="root"
 SSH_PORT="222"
 KEY_DIR="$OPT_DIR/etc/$REPO"
 SSH_KEY="$KEY_DIR/id_ed25519"
+KNOWN_HOSTS="$KEY_DIR/known_hosts"
 SSH_BIN=""
 # OTA-домен по умолчанию — Osvault (KeenKit), https://osvault.project-athens.com
 OTA_DOMAIN_DEFAULT="https://osvault.project-athens.com"
@@ -1845,10 +1846,14 @@ load_config() {
     case "$key" in
       ssh_user) SSH_USER=$(printf '%s' "$val" | sed 's/^"//; s/"$//') ;;
       ssh_port) SSH_PORT=$(printf '%s' "$val" | sed 's/^"//; s/"$//') ;;
+      ssh_key) SSH_KEY=$(printf '%s' "$val" | sed 's/^"//; s/"$//') ;;
+      known_hosts) KNOWN_HOSTS=$(printf '%s' "$val" | sed 's/^"//; s/"$//') ;;
     esac
   done < "$CONFIG_FILE"
   [ -n "$SSH_USER" ] || SSH_USER="root"
   [ -n "$SSH_PORT" ] || SSH_PORT="222"
+  [ -n "$SSH_KEY" ] || SSH_KEY="$KEY_DIR/id_ed25519"
+  [ -n "$KNOWN_HOSTS" ] || KNOWN_HOSTS="$KEY_DIR/known_hosts"
 }
 
 get_cpuload() {
@@ -1875,7 +1880,11 @@ ssh_node() {
   if $SSH_BIN -h 2>&1 | grep -qi dropbear; then
     $SSH_BIN -y -y -q -i "$SSH_KEY" -l "$SSH_USER" -p "$SSH_PORT" "$ip" "$cmd" < /dev/null 2>&1
   else
-    $SSH_BIN -q -i "$SSH_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+    # Запоминаем host-ключи узлов в known_hosts: при первом входе ключ добавляется
+    # автоматически (без подтверждения), при его СМЕНЕ соединение отклоняется
+    # (accept-new — безопаснее, чем «no», и не требует подтверждений).
+    mkdir -p "$(dirname "$KNOWN_HOSTS")" 2>/dev/null
+    $SSH_BIN -q -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$KNOWN_HOSTS" \
       -o BatchMode=yes -o ConnectTimeout=10 -o LogLevel=ERROR \
       -l "$SSH_USER" -p "$SSH_PORT" "$ip" "$cmd" < /dev/null 2>&1
   fi
@@ -2324,6 +2333,43 @@ cmd_setup() {
   echo "Затем проверьте доступ: meshkitkeen status"
 }
 
+cmd_known_hosts() {
+  load_config
+  local action="${1:-}" target="${2:-}"
+  case "$action" in
+    "")
+      if [ -f "$KNOWN_HOSTS" ]; then
+        echo "Запомненные host-ключи узлов ($KNOWN_HOSTS):"
+        sed 's/^/  /' "$KNOWN_HOSTS"
+      else
+        echo "Запомненных узлов пока нет ($KNOWN_HOSTS отсутствует)."
+      fi
+      ;;
+    rm|remove|clear)
+      case "$target" in
+        all)
+          rm -f "$KNOWN_HOSTS"
+          echo "Удалены все запомненные узлы."
+          ;;
+        "")
+          echo "Использование: meshkitkeen known-hosts rm <IP|all>" >&2
+          return 1
+          ;;
+        *)
+          ssh-keygen -R "$target" -f "$KNOWN_HOSTS" >/dev/null 2>&1
+          echo "Удалена запись для $target (если была)."
+          ;;
+      esac
+      ;;
+    *)
+      echo "Использование:" >&2
+      echo "  meshkitkeen known-hosts             — показать запомненные узлы" >&2
+      echo "  meshkitkeen known-hosts rm <IP|all> — удалить узел(ы) из known_hosts" >&2
+      return 1
+      ;;
+  esac
+}
+
 cmd_add_node() {
   local ip="$1"
   [ -n "$ip" ] || { echo "Использование: meshkitkeen add-node <IP-узла>" >&2; return 1; }
@@ -2358,6 +2404,7 @@ MeshkitKeen v$FORK_VERSION — форк KeenKit $SCRIPT_VERSION с управл�
   meshkitkeen domain [set <URL>|reset]  Настроить источник обновлений
   meshkitkeen add-node <IP>             Подключить новый mesh-узел
   meshkitkeen setup                      Сгенерировать SSH-ключи для узлов
+  meshkitkeen known-hosts [rm <IP|all>] Показать/удалить запомненные host-ключи узлов
   meshkitkeen backup-entware            Бэкап Entware
   meshkitkeen backup-block              Бэкап разделов mtd
 
@@ -2365,8 +2412,11 @@ MeshkitKeen v$FORK_VERSION — форк KeenKit $SCRIPT_VERSION с управл�
 пункт «Меню KeenKit» с полным оригинальным функционалом: прошивка из файла,
 бэкапы, слоты, загрузчик, компоненты, язык, обновление скрипта).
 
-Конфиг:  /opt/etc/MeshkitKeen.conf   (domain, ssh_user, ssh_port)
+Конфиг:  /opt/etc/MeshkitKeen.conf   (domain, ssh_user, ssh_port, ssh_key, known_hosts)
 Ключ:    /opt/etc/MeshkitKeen/id_ed25519   (для SSH на узлы)
+known_hosts: /opt/etc/MeshkitKeen/known_hosts — запоминаемые host-ключи узлов
+             (первый вход добавляет ключ без подтверждения; при смене ключа узла
+             соединение отклоняется — очистите через: known-hosts rm <IP|all>).
 
 ВНИМАНИЕ: операции reboot/wifi/update изменяют состояние сети.
 EOF
@@ -2431,6 +2481,7 @@ main() {
     domain)         cmd_domain "$@" ;;
     add-node)       cmd_add_node "$@" ;;
     setup)          cmd_setup "$@" ;;
+    known-hosts)    cmd_known_hosts "$@" ;;
     backup-entware) backup_entware ;;
     backup-block)   backup_block ;;
     menu)           mesh_menu ;;

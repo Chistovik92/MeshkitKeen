@@ -57,6 +57,8 @@ opkg install openssh-client openssh-keygen
 ssh_user="root"
 ssh_port="222"
 #domain="https://your-ota-domain.example.com"   # необязательно, см. ниже
+#ssh_key="/opt/etc/MeshkitKeen/id_ed25519"      # по умолчанию — не обязательно
+#known_hosts="/opt/etc/MeshkitKeen/known_hosts" # по умолчанию — не обязательно
 ```
 
 `domain` нужен только для команды `update`/`ota-update`. Если он не задан,
@@ -123,6 +125,27 @@ meshkitkeen status
 
 Строка `Накопитель:` у узлов появится только когда ключ раздан и dropbear
 настроен с `-D`.
+
+## Шаг 3а. Запоминание подключений (known_hosts)
+
+Панель **запоминает** подключения к узлам, чтобы управлять ими без интерактивных
+запросов:
+
+- ключ доступа хранится в `/opt/etc/MeshkitKeen/id_ed25519` (см. Шаг 3);
+- host-ключи узлов хранятся в `/opt/etc/MeshkitKeen/known_hosts`.
+
+Режим `StrictHostKeyChecking=accept-new` означает:
+
+- **первый** вход на узел добавляет его host-ключ автоматически (без подтверждения);
+- при **смене** host-ключа узла (перепрошивка/смена устройства) соединение
+  **отклоняется** — это защита от MITM. Чтобы снова подключиться, удалите старую
+  запись и повторите вход:
+
+```sh
+meshkitkeen known-hosts                 # посмотреть запомненные узлы
+meshkitkeen known-hosts rm 192.168.1.100   # удалить конкретный узел
+meshkitkeen known-hosts rm all          # очистить всё
+```
 
 ## Шаг 4. Подключение нового mesh-узла
 
