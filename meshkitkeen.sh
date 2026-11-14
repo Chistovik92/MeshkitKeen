@@ -258,7 +258,7 @@ check_update() {
   response=$(curl -s --max-time 1 "https://api.github.com/repos/$USERNAME/$REPO/releases/latest")
   REMOTE_VERSION=$(json_get_value "$response" '.tag_name')
   [ -z "$REMOTE_VERSION" ] && return
-  [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ] && printf " | ${GREEN}Доступно $REMOTE_VERSION${NC}"
+  [ "$REMOTE_VERSION" != "v$FORK_VERSION" ] && printf " | ${GREEN}Доступно $REMOTE_VERSION${NC}"
 }
 
 get_device() {
